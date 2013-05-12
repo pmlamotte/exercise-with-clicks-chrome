@@ -1,0 +1,29 @@
+{
+  "manifest_version": 2,
+
+  "name": "Exercise with Clicks",
+  "description": "Literally the greatest chrome extension to ever exist.",
+  "version": "0.0.0.1",
+  "options_page": "options.html",
+
+  "permissions":[
+    "storage",
+    "notifications"
+  ],
+
+  "web_accessible_resources": ["stuff.js"],
+
+  "content_scripts": [{
+    "js": ["jquery.min.js","stuff.js"],
+    "matches": [ "http://*/*", "https://*/*" ]
+  }],
+
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+
+  "browser_action": {
+
+  }
+}
