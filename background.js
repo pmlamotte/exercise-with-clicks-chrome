@@ -1,11 +1,11 @@
 chrome.browserAction.onClicked.addListener(function(){
-  chrome.tabs.create({"url":"options.html"});
-  //chrome.storage.sync.set({"clickcount":0},function(){});
+  //chrome.tabs.create({"url":"options.html"});
+  chrome.storage.local.clear();
 });
 
 var achievements = {
-  "First Click!": 1,
-  "First Calorie!": 742
+  "First Click!": 1.0,
+  "First Calorie!": 1000.0
 };
 
 function achievement(name) {
@@ -13,17 +13,19 @@ function achievement(name) {
     null,
     "Achievement Unlocked!",
     "You have unlocked achievement '" + name + "' with " +
-      (achievements[name]*1.42/1000).toFixed(3) + " Calories burned."
+      achievements[name].toFixed(3) + " Calories burned."
   );
   notification.show();
 }
 
 chrome.storage.onChanged.addListener(function(changes,areaName){
-  if (areaName!="sync") return;
-  if (!("clickcount" in changes)) return;
+  if (areaName!="local") return;
+  if (!("totalCount" in changes)) return;
+  var oldCals = changes.totalCount.oldValue * 1.42 / 1000;
+  var newCals = changes.totalCount.newValue * 1.42 / 1000;
   for (ach in achievements) {
-    if (changes.clickcount.oldValue < achievements[ach] &&
-        changes.clickcount.newValue >= achievements[ach]) {
+    if (oldCals < achievements[ach] &&
+        newCals >= achievements[ach]) {
       achievement(ach);
     }
   }
