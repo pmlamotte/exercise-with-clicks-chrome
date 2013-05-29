@@ -44,7 +44,9 @@ function refreshView() {
 
 $(document).ready(function(){
   refreshView();
-  chrome.storage.onChanged.addListener(function(changes,areaName){
-    refreshView();
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if ("db" in request){
+      refreshView();
+    }
   });
 });
