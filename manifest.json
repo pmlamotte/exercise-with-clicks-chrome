@@ -14,7 +14,7 @@
   "web_accessible_resources": ["stuff.js"],
 
   "content_scripts": [{
-    "js": ["jquery.min.js","clickdb.js","stuff.js"],
+    "js": ["jquery.min.js","batchutil.js","clickdb.js","stuff.js"],
     "matches": [ "http://*/*", "https://*/*" ]
   }],
 

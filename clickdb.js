@@ -1,71 +1,124 @@
 ClickDB = {
-  _hourToPair: function(hour) {
-    return new Array("segment"+parseInt(hour/1024),hour%1024);
+  _db: null,
+  // database constants
+  __dbname: "clicks",
+  __dbversion: "1.0",
+  __dbdesc: "some clicks",
+  __dbsize: 5*1024*1024, // 5 MB
+  // sql queries
+  __createtable: "CREATE TABLE IF NOT EXISTS clicks(time INTEGER PRIMARY KEY ASC, count BIGINTEGER)",
+  __ensurehour: "INSERT OR IGNORE INTO clicks (time,count) VALUES (?,?)",
+  __incrementhour: "UPDATE clicks SET count = count + 1 WHERE time = ?",
+  __gettotal: "SELECT count FROM clicks ORDER BY time DESC LIMIT 1",
+  __getlast24: "SELECT * FROM clicks WHERE (time >= ? - 24) ORDER BY time ASC",
+  __getprev: "SELECT * FROM clicks WHERE (time < ? - 24) ORDER BY time DESC LIMIT 1",
+  // other constants
+  __timestep: 1000*60*60, // 1 hr
+  // private methods
+  _onDB: function(callback){
+    var t = this;
+    if (t._db == null){
+      t._db = openDatabase(t.__dbname,t.__dbversion,t.__dbdesc,t.__dbsize);
+      t._db.transaction(function(tx){
+        tx.executeSql(t.__createtable,[]);
+      },null,callback);
+    } else {
+      if (callback) {
+        callback();
+      }
+    }
   },
-  _currentHour: function() {
-    var d = new Date();
-    d.setMinutes(0,0,0);
-    return parseInt(d.getTime() / 1000 / 3600);
-  },
-  _storeClick: function(hour,callback) {
-    var pair = this._hourToPair(hour);
-    var reqObj = {};
-    reqObj.totalCount = 0;
-    reqObj[pair[0]] = {};
-    chrome.storage.local.get(reqObj, function(res){
-      res.totalCount++;
-      res[pair[0]][pair[1]] = res.totalCount;
-      chrome.storage.local.set(res,function(){
-        if (callback) {
-          callback();
+  _transaction: function(queries,callback){
+    var t = this;
+    t._onDB(function(){
+      var res = {};
+      var single = function(tx,name){
+        tx.executeSql(queries[name][0],queries[name][1],function(tx,rs){
+          res[name] = rs;
+        },t._logerr);
+      };
+      t._db.transaction(function(tx){
+        for (var name in queries){
+          single(tx,name);
+        }
+      },null,function(){
+        if (callback){
+          callback(res);
         }
       });
     });
   },
-  _loadRange: function(cur,start,end,callback) {
-    if (start >= end) {
-      if (callback) {
-        callback(cur);
-      }
-      return;
-    }
-    var segstart = parseInt(start/1024)*1024;
-    var pair = this._hourToPair(start);
-    var endPair = this._hourToPair(end);
-    chrome.storage.local.get(pair[0],function(res){
-      var lastIndex = 1024;
-      if (segstart+1024 >= end) {
-        lastIndex = end - segstart;
-      }
-      for (var i = start % 1024; i < lastIndex; i++) {
-        if (pair[0] in res && i in res[pair[0]]) {
-          cur[i+segstart] = res[pair[0]][i];
-        } else {
-          cur[i+segstart] = 0; // fix this
-        }
-      }
-      ClickDB._loadRange(cur,start+1024,end,callback);
-    });
+  _wrapCB: function(callback){
+    return function() {
+      if (callback)
+        callback();
+    };
   },
+  _currentIndex: function() {
+    return parseInt(new Date().getTime() / this.__timestep);
+  },
+  _logerr: function(tx,err){
+    console.log(err);
+  },
+  // public methods
   storeClick: function(callback) {
-    this._storeClick(this._currentHour(),callback);
-  },
-  loadRange: function(start,end,callback) {
-    this._loadRange({},start,end,callback);
+    var t = this;
+    var i = t._currentIndex();
+    t._transaction({
+      total: [t.__gettotal,[]]
+    },function(ires){
+      var total = 0;
+      if (ires.total.rows.length > 0) {
+        total = ires.total.rows.item(0).count;
+      }
+      t._transaction({
+        ensurehour: [t.__ensurehour,[i,total]],
+        incrementhour: [t.__incrementhour,[i]],
+      });
+    });
   },
   loadLast24: function(callback) {
-    var hour = new Date().setMinutes(0,0,0) / 1000 / 3600;
-    this._loadRange({},hour-24,hour+1,callback);
-  },
-  loadTotal: function(callback) {
-    chrome.storage.local.get("totalCount",function(result){
-      var totalCount = 0;
-      if ("totalCount" in result) {
-        totalCount = result.totalCount;
+    var t = this;
+    var i = t._currentIndex();
+    t._transaction({
+      latest: [t.__getlast24,[i]],
+      prev: [t.__getprev,[i]],
+    },function(res){
+      var latest = {};
+      for (var x = 0; x < res.latest.rows.length; x++) {
+        var row = res.latest.rows.item(x);
+        latest[row.time] = row.count;
       }
-      if (callback) {
-        callback(totalCount);
+      var lastcount = 0;
+      if (res.prev.rows.length > 0) {
+        lastcount = res.prev.rows.item(0).count;
+      }
+      var ret = {};
+      for (var x = 0; x <= 24; x++) {
+        var hr = i + x - 24;
+        if (hr in latest) {
+          lastcount = ret[hr] = latest[hr];
+        } else {
+          ret[hr] = lastcount;
+        }
+      }
+      if (callback){
+        callback(ret);
       }
     });
-  }
+  },
+  loadTotal: function(callback){
+    var t = this;
+    t._transaction({
+      x: [t.__gettotal,[]],
+    },function(res){
+      var count = 0;
+      if (res.x.rows.length > 0) {
+        count = res.x.rows.item(0).count;
+      }
+      if (callback){
+        callback(count);
+      }
+    });
+  },
 };

@@ -25,7 +25,7 @@ function refreshView() {
     }
     var minc = data[0][1];
     for (var index in data) {
-      data[index][1] -= minc;
+      //data[index][1] -= minc;
     }
     data.sort(function(x,y){return x[0]-y[0]});
     var ticks = [];

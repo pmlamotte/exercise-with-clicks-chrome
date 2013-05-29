@@ -1,6 +1,5 @@
 chrome.browserAction.onClicked.addListener(function(){
-  //chrome.tabs.create({"url":"options.html"});
-  chrome.storage.local.clear();
+  chrome.tabs.create({"url":"options.html"});
 });
 
 var achievements = {
@@ -13,7 +12,7 @@ function achievement(name) {
     null,
     "Achievement Unlocked!",
     "You have unlocked achievement '" + name + "' with " +
-      achievements[name].toFixed(3) + " Calories burned."
+    achievements[name].toFixed(3) + " calories burned."
   );
   notification.show();
 }
@@ -29,4 +28,8 @@ chrome.storage.onChanged.addListener(function(changes,areaName){
       achievement(ach);
     }
   }
+});
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  ClickDB.storeClick();
 });
