@@ -20,6 +20,8 @@ function refreshView() {
   });
   ClickDB.loadLast24(function(results){
     data = [];
+    ticks = [];
+    clicks = [];
     for (var hour in results) {
       data.push([parseInt(hour),results[hour]]);
     }
@@ -28,25 +30,43 @@ function refreshView() {
       //data[index][1] -= minc;
     }
     data.sort(function(x,y){return x[0]-y[0]});
-    var ticks = [];
     data.forEach(function(hour){
       var d = new Date(hour[0]*3600*1000);
-      if (hour[0]%2==0) {
-        ticks.push([
-          hour[0],
-          tickString(hour[0])
-        ])
+      ticks.push(tickString(hour[0]));
+      clicks.push(hour[1]);
+    });
+    $('#graph').highcharts({
+      chart: {
+        type: 'line'
+      },
+      title: {
+        text: 'Click total over the past 24 hours'
+      },
+      legend: {
+        enabled: false
+      },
+      xAxis: {
+        categories: ticks,
+        tickInterval: 2
+      },
+        yAxis: {
+          title: {
+            text: 'Number of clicks'
+          }
+        },
+        series: [{
+          name: 'Clicks',
+          data: clicks
+        }]
+      });
+    });
+  }
+
+                     $(document).ready(function(){
+    refreshView();
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      if ("db" in request){
+        refreshView();
       }
     });
-    $.plot($("#graph"),[data],{xaxis:{ticks:ticks}});
   });
-}
-
-$(document).ready(function(){
-  refreshView();
-  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    if ("db" in request){
-      refreshView();
-    }
-  });
-});
