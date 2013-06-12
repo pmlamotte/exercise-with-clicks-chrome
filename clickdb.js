@@ -20,7 +20,8 @@ ClickDB = {
   __timestep: 1000*60*60, // 1 hr
   __achievements: {
   "First Click!": 1.0,
-  "First Calorie!": 1000.0
+  "First Calorie!": 1000.0,
+  "First Pound!": 3500000.0
   },
   // private methods
   _onDB: function(callback){

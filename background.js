@@ -9,7 +9,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         var notification = webkitNotifications.createNotification(
           null,
           "Achievement Unlocked!",
-          "You have unlocked achievement '" + name + "' with " + achs[name].toFixed(3) + " calories burned."
+          "You have unlocked achievement '" + name + "' with " + achs[name].toFixed(3)/1000 + " calories burned."
         );
         notification.show();
       }

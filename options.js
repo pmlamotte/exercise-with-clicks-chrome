@@ -13,60 +13,87 @@ function tickString(hour) {
     hr + ":00 " + hs;
 }
 
+function displayAchievements() {
+  $('#achievements').html("");
+  for (var achv in ClickDB.__achievements) {
+
+    var calories = parseFloat($("#calories").text());
+    var achvCalories = ClickDB.__achievements[achv] / 1000;
+
+    var unlocked = "";
+    console.log
+    if (calories >= achvCalories) {
+      unlocked = "unlocked";
+      console.log('yay!');
+    } else {
+    console.log('no!')}
+
+    var plural = achvCalories == 1 ? '' : 's';
+    $('#achievements').append('<div class="achievement well ' +
+                              unlocked + '">' +
+                              achv + '<span class="pull-right">' +
+                              achvCalories
+                              + ' Calorie' + plural + '</div>');
+  }
+}
+
 function refreshView() {
   ClickDB.loadTotal(function(totalCount){
-    $("#count").text(totalCount + " Clicks");
-    $("#calories").text((totalCount*1.42/1000).toFixed(3) + " Calories burned.");
+    $("#count").text(totalCount);
+    $("#calories").text((totalCount*1.42/1000).toFixed(3));
+    displayAchievements();
   });
+
   ClickDB.loadLast24(function(results){
     data = [];
-    ticks = [];
-    clicks = [];
     for (var hour in results) {
       data.push([parseInt(hour),results[hour]]);
     }
-    var minc = data[0][1];
-    for (var index in data) {
-      //data[index][1] -= minc;
-    }
     data.sort(function(x,y){return x[0]-y[0]});
+    var ticks = [];
+    var clicks = [];
     data.forEach(function(hour){
-      var d = new Date(hour[0]*3600*1000);
       ticks.push(tickString(hour[0]));
       clicks.push(hour[1]);
     });
+    console.log("data size: " + data.length);
+    console.log(ticks.length);
     $('#graph').highcharts({
       chart: {
         type: 'line'
       },
       title: {
-        text: 'Click total over the past 24 hours'
-      },
-      legend: {
-        enabled: false
+        text: 'Clicks from the past 24 hours'
       },
       xAxis: {
         categories: ticks,
-        tickInterval: 2
+        labels: {
+          overflow: "justify",
+          step: 2
+        }
       },
-        yAxis: {
-          title: {
-            text: 'Number of clicks'
-          }
-        },
-        series: [{
-          name: 'Clicks',
-          data: clicks
-        }]
-      });
-    });
-  }
-
-                     $(document).ready(function(){
-    refreshView();
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-      if ("db" in request){
-        refreshView();
+      yAxis: {
+        title: {
+          text: 'Number of clicks'
+        }
+      },
+      series: [{
+        data: clicks,
+        name: "clicks"
+      }],
+      legend: {
+        enabled: false
       }
     });
   });
+}
+
+$(document).ready(function(){
+  refreshView();
+  displayAchievements();
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if ("db" in request){
+      refreshView();
+    }
+  });
+});
