@@ -11,7 +11,7 @@
     "notifications"
   ],
 
-  "web_accessible_resources": ["stuff.js"],
+  "web_accessible_resources": ["stuff.js", "img/trophy.png"],
 
   "content_scripts": [{
     "js": ["jquery.min.js","clickdb.js","stuff.js"],

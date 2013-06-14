@@ -7,7 +7,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     ClickDB.unlockAchs(function(achs){
       for (var name in achs){
         var notification = webkitNotifications.createNotification(
-          null,
+          "img/trophy.png",
           "Achievement Unlocked!",
           "You have unlocked achievement '" + name + "' with " + achs[name].toFixed(3)/1000 + " calories burned."
         );
