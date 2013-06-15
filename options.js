@@ -13,25 +13,19 @@ function tickString(hour) {
     hr + ":00 " + hs;
 }
 
-function displayAchievements() {
+function displayAchievements(achievements) {
   $('#achievements').html("");
-  for (var achv in ClickDB.__achievements) {
+  for (var achv in achievements) {
 
     var calories = parseFloat($("#calories").text());
-    var achvCalories = ClickDB.__achievements[achv] / 1000;
+    var achvCalories = achievements[achv].calories / 1000;
 
-    var unlocked = "";
-    console.log
-    if (calories >= achvCalories) {
-      unlocked = "unlocked";
-      console.log('yay!');
-    } else {
-    console.log('no!')}
+    var unlocked = achievements[achv].unlocked ? "unlocked" : "";
 
     var plural = achvCalories == 1 ? '' : 's';
     $('#achievements').append('<div class="achievement well ' +
                               unlocked + '">' +
-                              achv + '<span class="pull-right">' +
+                              achievements[achv].name + '<span class="pull-right">' +
                               achvCalories
                               + ' Calorie' + plural + '</div>');
   }
@@ -41,8 +35,9 @@ function refreshView() {
   ClickDB.loadTotal(function(totalCount){
     $("#count").text(totalCount);
     $("#calories").text((totalCount*1.42/1000).toFixed(3));
-    displayAchievements();
   });
+
+  ClickDB.getAchievements(displayAchievements);
 
   ClickDB.loadLast24(function(results){
     data = [];
@@ -56,8 +51,7 @@ function refreshView() {
       ticks.push(tickString(hour[0]));
       clicks.push(hour[1]);
     });
-    console.log("data size: " + data.length);
-    console.log(ticks.length);
+
     $('#graph').highcharts({
       chart: {
         type: 'line'

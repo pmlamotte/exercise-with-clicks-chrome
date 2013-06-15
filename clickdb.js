@@ -7,11 +7,13 @@ ClickDB = {
   __dbsize: 5*1024*1024, // 5 MB
   // sql queries
   __createtable: "CREATE TABLE IF NOT EXISTS clicks(time INTEGER PRIMARY KEY ASC, count BIGINTEGER)",
-  __createachtable: "CREATE TABLE IF NOT EXISTS achievements(name VARCHAR(255) PRIMARY KEY, cals DOUBLE, unlocked BOOLEAN DEFAULT 0)",
-  __insertach: "INSERT OR IGNORE INTO achievements (name,cals) VALUES (?,?)",
+  __createachtable: "CREATE TABLE IF NOT EXISTS achievements(achv_id VARCHAR(255) PRIMARY KEY, unlocked BOOLEAN DEFAULT 0)",
+  __insertach: "INSERT OR IGNORE INTO achievements (achv_id) VALUES (?)",
   __ensurehour: "INSERT OR IGNORE INTO clicks (time,count) VALUES (?,?)",
-  __getunlockable: "SELECT name,cals FROM achievements WHERE unlocked = 0 AND cals <= ?",
-  __unlockall: "UPDATE achievements SET unlocked = 1 WHERE unlocked = 0 AND cals <= ?",
+  __getAllAchvs: "SELECT * FROM achievements",
+  __getunlockable: "SELECT achv_id FROM achievements WHERE unlocked = 0",
+  __unlockAchievement: "UPDATE achievements SET unlocked = 1 WHERE achv_id = ?",
+  __unlockall: "UPDATE achievements SET unlocked = 1 WHERE unlocked = 0",
   __incrementhour: "UPDATE clicks SET count = count + 1 WHERE time = ?",
   __gettotal: "SELECT count FROM clicks ORDER BY time DESC LIMIT 1",
   __getlast24: "SELECT * FROM clicks WHERE (time >= ? - 24) ORDER BY time ASC",
@@ -19,9 +21,18 @@ ClickDB = {
   // other constants
   __timestep: 1000*60*60, // 1 hr
   __achievements: {
-  "First Click!": 1.0,
-  "First Calorie!": 1000.0,
-  "First Pound!": 3500000.0
+    "first_click": {
+      name: "First Click!",
+      calories: 1.0,
+    },
+    "first_calorie": {
+      name: "First Calorie!",
+      calories: 1000.0
+    },
+    "first_pound": {
+      name: "First Pound!",
+      calories: 3500000.0
+    },
   },
   // private methods
   _onDB: function(callback){
@@ -32,7 +43,7 @@ ClickDB = {
         tx.executeSql(t.__createtable,[],null,t._logerr);
         tx.executeSql(t.__createachtable,[],null,t._logerr);
         for (var ach in t.__achievements){
-          tx.executeSql(t.__insertach,[ach,t.__achievements[ach]],null,t._logerr);
+          tx.executeSql(t.__insertach,[ach],null,t._logerr);
         }
       },null,callback);
     } else {
@@ -134,22 +145,31 @@ ClickDB = {
       }
     });
   },
-  unlockAchs: function(callback){
+  getAchievements: function(callback) {
     var t = this;
-    t.loadTotal(function(count){
       t._transaction({
-        achs: [t.__getunlockable,[count*1.42]],
-        set: [t.__unlockall,[count*1.42]],
-      },function(res){
-        var ret = {};
-        for (var i = 0; i < res.achs.rows.length; i++) {
-          var row = res.achs.rows.item(i);
-          ret[row.name] = row.cals;
+        achvs: [t.__getAllAchvs],
+      }, function(res) {
+        for (var i = 0; i < res.achvs.rows.length; i++) {
+          var row = res.achvs.rows.item(i);
+          var achv = t.__achievements[row.achv_id];
+          if (achv) {
+            achv.unlocked = row.unlocked ? true : false;
+          }
         }
-        if (callback){
-          callback(ret);
+        if (callback) {
+          callback(t.__achievements);
         }
       });
+  },
+  unlockAchievement: function(achv_id, callback){
+    var t = this;
+    t._transaction({
+      unlock: [t.__unlockAchievement, [achv_id]],
+    },function(res){
+      if (callback){
+        callback();
+      }
     });
   },
 };
