@@ -6,7 +6,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if ("db" in request){
     ClickDB.loadTotal(function(calories) {
       ClickDB.getAchievements(function(achvs) {
-        console.log(achvs);
         for (var achv_id in achvs) {
           var achv = achvs[achv_id];
           if (!achv.unlocked && calories >= achv.calories) {

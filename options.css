@@ -52,3 +52,9 @@ hr {
   color: #000;
   background: #fff;
 }
+
+.achievement-date {
+  padding-top: 3px;
+  font-size: .75em;
+  font-weight: normal;
+}

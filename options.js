@@ -15,19 +15,29 @@ function tickString(hour) {
 
 function displayAchievements(achievements) {
   $('#achievements').html("");
-  for (var achv in achievements) {
+  for (var achv_id in achievements) {
+    var achv = achievements[achv_id];
 
     var calories = parseFloat($("#calories").text());
-    var achvCalories = achievements[achv].calories / 1000;
+    var achvCalories = achv.calories / 1000;
 
-    var unlocked = achievements[achv].unlocked ? "unlocked" : "";
+    var unlocked = "";
+    var dateString = "";
+    if (achv.unlocked) {
+      unlocked = "unlocked";
+      var date = new Date(achv.unlocked_at);
+      dateString = 'Unlocked on: ' + date.toLocaleDateString() ;
+    }
+
 
     var plural = achvCalories == 1 ? '' : 's';
     $('#achievements').append('<div class="achievement well ' +
                               unlocked + '">' +
-                              achievements[achv].name + '<span class="pull-right">' +
-                              achvCalories
-                              + ' Calorie' + plural + '</div>');
+                              achv.name + '<span class="pull-right">' +
+                              achvCalories +
+                              ' Calorie' + plural + '</span>' +
+                              ((achv.unlocked) ? ('<br/>' +
+                               '<div class="text-right achievement-date"><small>' + dateString + '</small></div>') : '') + '</div>');
   }
 }
 

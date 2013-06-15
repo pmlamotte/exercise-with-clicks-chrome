@@ -7,12 +7,12 @@ ClickDB = {
   __dbsize: 5*1024*1024, // 5 MB
   // sql queries
   __createtable: "CREATE TABLE IF NOT EXISTS clicks(time INTEGER PRIMARY KEY ASC, count BIGINTEGER)",
-  __createachtable: "CREATE TABLE IF NOT EXISTS achievements(achv_id VARCHAR(255) PRIMARY KEY, unlocked BOOLEAN DEFAULT 0)",
+  __createachtable: "CREATE TABLE IF NOT EXISTS achievements(achv_id VARCHAR(255) PRIMARY KEY, unlocked BOOLEAN DEFAULT 0, unlocked_at BIGINTEGER)",
   __insertach: "INSERT OR IGNORE INTO achievements (achv_id) VALUES (?)",
   __ensurehour: "INSERT OR IGNORE INTO clicks (time,count) VALUES (?,?)",
   __getAllAchvs: "SELECT * FROM achievements",
   __getunlockable: "SELECT achv_id FROM achievements WHERE unlocked = 0",
-  __unlockAchievement: "UPDATE achievements SET unlocked = 1 WHERE achv_id = ?",
+  __unlockAchievement: "UPDATE achievements SET unlocked = 1, unlocked_at = ? WHERE achv_id = ?",
   __unlockall: "UPDATE achievements SET unlocked = 1 WHERE unlocked = 0",
   __incrementhour: "UPDATE clicks SET count = count + 1 WHERE time = ?",
   __gettotal: "SELECT count FROM clicks ORDER BY time DESC LIMIT 1",
@@ -155,6 +155,9 @@ ClickDB = {
           var achv = t.__achievements[row.achv_id];
           if (achv) {
             achv.unlocked = row.unlocked ? true : false;
+            if (achv.unlocked) {
+              achv.unlocked_at = row.unlocked_at;
+            }
           }
         }
         if (callback) {
@@ -165,7 +168,7 @@ ClickDB = {
   unlockAchievement: function(achv_id, callback){
     var t = this;
     t._transaction({
-      unlock: [t.__unlockAchievement, [achv_id]],
+      unlock: [t.__unlockAchievement, [Date.now(), achv_id]],
     },function(res){
       if (callback){
         callback();
