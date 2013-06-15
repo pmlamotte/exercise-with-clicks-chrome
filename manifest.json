@@ -2,7 +2,7 @@
   "manifest_version": 2,
 
   "name": "Exercise with Clicks",
-  "description": "Keep track of the weight you have lost just by clicking your mouse!.",
+  "description": "Keep track of the weight you have lost just by clicking your mouse!",
   "version": "0.0.0.1",
   "options_page": "options.html",
 
