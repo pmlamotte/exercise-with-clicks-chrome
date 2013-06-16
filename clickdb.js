@@ -16,11 +16,12 @@ ClickDB = {
   __gettotal: "SELECT count FROM clicks ORDER BY time DESC LIMIT 1",
   __getlast24: "SELECT * FROM clicks WHERE (time >= ? - 24) ORDER BY time ASC",
   __getprev: "SELECT * FROM clicks WHERE (time < ? - 24) ORDER BY time DESC LIMIT 1",
+  __getspec: "SELECT * FROM clicks WHERE (time <= ?) ORDER BY time DESC LIMIT 1",
   // other constants
   __timestep: 1000*60*60, // 1 hr
   __achievements: {
-  "First Click!": 1.0,
-  "First Calorie!": 1000.0
+    "First Click!": 1.0,
+    "First Calorie!": 1000.0
   },
   // private methods
   _onDB: function(callback){
@@ -112,6 +113,71 @@ ClickDB = {
           lastcount = ret[hr] = latest[hr];
         } else {
           ret[hr] = lastcount;
+        }
+      }
+      if (callback){
+        callback(ret);
+      }
+    });
+  },
+  loadRange: function(interval,count,callback) {
+    var t = this;
+    var i = t._currentIndex();
+    var start = i;
+    start -= parseInt(new Date().getTimezoneOffset()/60);
+    start -= start % interval;
+    start += parseInt(new Date().getTimezoneOffset()/60);
+    start -= (count-1) * interval;
+    //var start = (i - (i % interval)) - (count-1) * interval;
+    var queries = {};
+    for (var x = 0; x < count; x++){
+      queries[x] = [t.__getspec,[start+x*interval]];
+    }
+    queries[count] = [t.__getspec,[i]];
+    t._transaction(queries,function(res){
+      var lastcount = 0;
+      if (res[0].rows.length > 0) {
+        lastcount = res[0].rows.item(0).count;
+      }
+      var ret ={};
+      for (var x = 1; x <= count; x++){
+        if (res[x].rows.length > 0){
+          ret[start+(x-1)*interval] = res[x].rows.item(0).count - lastcount;
+          lastcount = res[x].rows.item(0).count;
+        } else {
+          ret[start+(x-1)*interval] = 0;
+        }
+      }
+      if (callback){
+        callback(ret);
+      }
+    });
+  },
+  loadRangeCumul: function(interval,count,callback) {
+    var t = this;
+    var i = t._currentIndex();
+    var start = i;
+    start -= parseInt(new Date().getTimezoneOffset()/60);
+    start -= start % interval;
+    start += parseInt(new Date().getTimezoneOffset()/60);
+    start -= (count-1) * interval;
+    //var start = (i - (i % interval)) - (count-1) * interval;
+    var queries = {};
+    for (var x = 0; x < count; x++){
+      queries[x] = [t.__getspec,[start+x*interval]];
+    }
+    queries[count] = [t.__getspec,[i]];
+    t._transaction(queries,function(res){
+      var lastcount = 0;
+      if (res[0].rows.length > 0) {
+        lastcount = res[0].rows.item(0).count;
+      }
+      var ret ={};
+      for (var x = 1; x <= count; x++){
+        if (res[x].rows.length > 0){
+          lastcount = ret[start+(x-1)*interval] = res[x].rows.item(0).count;
+        } else {
+          ret[start+(x-1)*interval] = lastcount;
         }
       }
       if (callback){

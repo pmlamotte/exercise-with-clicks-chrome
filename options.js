@@ -18,27 +18,23 @@ function refreshView() {
     $("#count").text(totalCount + " Clicks");
     $("#calories").text((totalCount*1.42/1000).toFixed(3) + " Calories burned.");
   });
-  ClickDB.loadLast24(function(results){
+  ClickDB.loadRange(1,28*12,function(results){
     data = [];
     for (var hour in results) {
       data.push([parseInt(hour),results[hour]]);
-    }
-    var minc = data[0][1];
-    for (var index in data) {
-      //data[index][1] -= minc;
     }
     data.sort(function(x,y){return x[0]-y[0]});
     var ticks = [];
     data.forEach(function(hour){
       var d = new Date(hour[0]*3600*1000);
-      if (hour[0]%2==0) {
+      if (hour[0]%1==0) {
         ticks.push([
           hour[0],
           tickString(hour[0])
         ])
       }
     });
-    $.plot($("#graph"),[data],{xaxis:{ticks:ticks}});
+    $.plot($("#graph"),[data],{xaxis:{/*ticks:ticks*/},bars:{show:true,barWidth:1,align:"center"}});
   });
 }
 
