@@ -1,13 +1,71 @@
 <html>
   <head>
     <script src="jquery.min.js"></script>
-    <script src="flot/jquery.flot.min.js"></script>
     <script src="clickdb.js"></script>
     <script src="options.js"></script>
+    <script src="highcharts/js/highcharts.js"></script>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.css" media="screen">
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="options.css">
   </head>
-  <body>
-    <div id="count"></div>
-    <div id="calories"></div>
-    <div id="graph" style="width:100%;height:300px"></div>
+  <body bgcolor="#fff">
+    <div class="container ">
+      <h1 class="text-center">Exercise with Clicks</h1>
+
+      <div class="row">
+        <div class="stats-container border span12">
+          <div class="row">
+            <div class="span1"></div>
+            <div class="lead text-center span10">
+              Here are some statistics on your web workout since installing the extension
+            </div>
+          </div> <!-- end row -->
+
+
+          <h2>All-time</h2>
+          <div class="row">
+            <div class="span12">
+              <table class="table table-striped table-bordered">
+                <tr>
+                  <td><b>Clicks</b></td>
+                  <td id="count"></td>
+                </tr>
+                <tr>
+                  <td><b>Calories</b></td>
+                  <td id="calories"></td>
+                </tr>
+              </table>
+            </div>
+          </div> <!-- end table row -->
+
+          <hr>
+
+          <h2>Past 24 hours</h2>
+          <div class="row">
+            <div id=graph-container class="span12">
+              <div id="graph"></div>
+            </div>
+          </div>
+
+          <hr>
+
+          <h2>Achievements</h2>
+
+          <div class="row">
+            <div id="achievements" class="span12">
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row">
+            <div class="lead span12">
+              Interested in some more in depth statistics? Send your ideas to
+              <a href="mailto:feedback@exercisewithclicks.com">feedback@exercisewithclicks.com</a>
+            </div>
+          </div> <!-- row -->
+        </div> <!-- stats-container -->
+      </div>
+    </div> <!-- container -->
   </body>
 </html>
