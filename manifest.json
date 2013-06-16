@@ -21,7 +21,8 @@
 
   "content_scripts": [{
     "js": ["jquery.min.js","clickdb.js","stuff.js"],
-    "matches": [ "http://*/*", "https://*/*" ]
+    "matches": [ "http://*/*", "https://*/*" ],
+    "all_frames": true
   }],
 
   "background": {
