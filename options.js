@@ -49,10 +49,10 @@ function refreshView() {
 
   ClickDB.getAchievements(displayAchievements);
 
-  ClickDB.loadLast24(function(results){
+  ClickDB.loadAll(function(results){
     data = [];
-    for (var hour in results) {
-      data.push([parseInt(hour),results[hour]]);
+    for (var hour in results.data) {
+      data.push([parseInt(hour),results.data[hour]]);
     }
     data.sort(function(x,y){return x[0]-y[0]});
     var ticks = [];
@@ -64,16 +64,16 @@ function refreshView() {
 
     $('#graph').highcharts({
       chart: {
-        type: 'line'
+        zoomType: 'x'
       },
       title: {
-        text: 'Clicks from the past 24 hours'
+        text: null
       },
       xAxis: {
-        categories: ticks,
-        labels: {
-          overflow: "justify",
-          step: 2
+        type: 'datetime',
+        maxZoom: 24 * 3600 * 1000, // 24 hours
+        title: {
+          text: null
         }
       },
       yAxis: {
@@ -82,11 +82,28 @@ function refreshView() {
         }
       },
       series: [{
+        type: 'area',
         data: clicks,
-        name: "clicks"
+        name: "clicks",
+        pointInterval: 3600 * 1000,
+        pointStart: (results.start * 60 - new Date().getTimezoneOffset()) * 60 * 1000
       }],
       legend: {
         enabled: false
+      },
+      plotOptions: {
+        area: {
+          lineWidth: 1,
+          marker: {
+            enabled: false
+          },
+          shadow: false,
+          states: {
+            hover: {
+              lineWidth: 1
+            }
+          }
+        }
       }
     });
   });

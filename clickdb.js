@@ -19,6 +19,7 @@ ClickDB = {
   __getlast24: "SELECT * FROM clicks WHERE (time >= ? - 24) ORDER BY time ASC",
   __getprev: "SELECT * FROM clicks WHERE (time < ? - 24) ORDER BY time DESC LIMIT 1",
   __getspec: "SELECT * FROM clicks WHERE (time <= ?) ORDER BY time DESC LIMIT 1",
+  __getearliest: "SELECT time FROM clicks ORDER BY time ASC LIMIT 1",
   // other constants
   __timestep: 1000*60*60, // 1 hr
   __achievements: {
@@ -85,6 +86,20 @@ ClickDB = {
   _logerr: function(tx,err){
     console.log(err);
   },
+  _earliestIndex: function(callback) {
+    var t = this;
+    t._transaction({
+      earliest: [t.__getearliest,[]],
+    },function(res){
+      var e = t._currentIndex() - 24;
+      if (res.earliest.rows.length > 0) {
+        e = Math.min(e, res.earliest.rows.item(0).time);
+      }
+      if (callback) {
+        callback(e);
+      }
+    });
+  },
   // public methods
   storeClick: function(callback) {
     var t = this;
@@ -102,45 +117,14 @@ ClickDB = {
       },t._wrapCB(callback));
     });
   },
-  loadLast24: function(callback) {
-    var t = this;
-    var i = t._currentIndex();
-    t._transaction({
-      latest: [t.__getlast24,[i]],
-      prev: [t.__getprev,[i]],
-    },function(res){
-      var latest = {};
-      for (var x = 0; x < res.latest.rows.length; x++) {
-        var row = res.latest.rows.item(x);
-        latest[row.time] = row.count;
-      }
-      var lastcount = 0;
-      if (res.prev.rows.length > 0) {
-        lastcount = res.prev.rows.item(0).count;
-      }
-      var ret = {};
-      for (var x = 0; x <= 24; x++) {
-        var hr = i + x - 24;
-        if (hr in latest) {
-          lastcount = ret[hr] = latest[hr];
-        } else {
-          ret[hr] = lastcount;
-        }
-      }
-      if (callback){
-        callback(ret);
-      }
-    });
-  },
-  loadRange: function(interval,count,callback) {
+  loadRange: function(interval,count,cumul,callback) {
     var t = this;
     var i = t._currentIndex();
     var start = i;
     start -= parseInt(new Date().getTimezoneOffset()/60);
     start -= start % interval;
     start += parseInt(new Date().getTimezoneOffset()/60);
-    start -= (count-1) * interval;
-    //var start = (i - (i % interval)) - (count-1) * interval;
+    start -= count * interval;
     var queries = {};
     for (var x = 0; x < count; x++){
       queries[x] = [t.__getspec,[start+x*interval]];
@@ -153,48 +137,32 @@ ClickDB = {
       }
       var ret ={};
       for (var x = 1; x <= count; x++){
-        if (res[x].rows.length > 0){
-          ret[start+(x-1)*interval] = res[x].rows.item(0).count - lastcount;
-          lastcount = res[x].rows.item(0).count;
+        var time = start + (x - 1) * interval;
+        if (cumul) {
+          if (res[x].rows.length > 0){
+            lastcount = ret[time] = res[x].rows.item(0).count;
+          } else {
+            ret[time] = lastcount;
+          }
         } else {
-          ret[start+(x-1)*interval] = 0;
+          if (res[x].rows.length > 0){
+            ret[time] = res[x].rows.item(0).count - lastcount;
+            lastcount = res[x].rows.item(0).count;
+          } else {
+            ret[time] = 0;
+          }
         }
       }
       if (callback){
-        callback(ret);
+        callback({start:start+1,data:ret});
       }
     });
   },
-  loadRangeCumul: function(interval,count,callback) {
+  loadAll: function(callback){
     var t = this;
     var i = t._currentIndex();
-    var start = i;
-    start -= parseInt(new Date().getTimezoneOffset()/60);
-    start -= start % interval;
-    start += parseInt(new Date().getTimezoneOffset()/60);
-    start -= (count-1) * interval;
-    //var start = (i - (i % interval)) - (count-1) * interval;
-    var queries = {};
-    for (var x = 0; x < count; x++){
-      queries[x] = [t.__getspec,[start+x*interval]];
-    }
-    queries[count] = [t.__getspec,[i]];
-    t._transaction(queries,function(res){
-      var lastcount = 0;
-      if (res[0].rows.length > 0) {
-        lastcount = res[0].rows.item(0).count;
-      }
-      var ret ={};
-      for (var x = 1; x <= count; x++){
-        if (res[x].rows.length > 0){
-          lastcount = ret[start+(x-1)*interval] = res[x].rows.item(0).count;
-        } else {
-          ret[start+(x-1)*interval] = lastcount;
-        }
-      }
-      if (callback){
-        callback(ret);
-      }
+    t._earliestIndex(function(earliest){
+      t.loadRange(1,i-earliest+1,true,callback);
     });
   },
   loadTotal: function(callback){
@@ -213,23 +181,23 @@ ClickDB = {
   },
   getAchievements: function(callback) {
     var t = this;
-      t._transaction({
-        achvs: [t.__getAllAchvs],
-      }, function(res) {
-        for (var i = 0; i < res.achvs.rows.length; i++) {
-          var row = res.achvs.rows.item(i);
-          var achv = t.__achievements[row.achv_id];
-          if (achv) {
-            achv.unlocked = row.unlocked ? true : false;
-            if (achv.unlocked) {
-              achv.unlocked_at = row.unlocked_at;
-            }
+    t._transaction({
+      achvs: [t.__getAllAchvs],
+    }, function(res) {
+      for (var i = 0; i < res.achvs.rows.length; i++) {
+        var row = res.achvs.rows.item(i);
+        var achv = t.__achievements[row.achv_id];
+        if (achv) {
+          achv.unlocked = row.unlocked ? true : false;
+          if (achv.unlocked) {
+            achv.unlocked_at = row.unlocked_at;
           }
         }
-        if (callback) {
-          callback(t.__achievements);
-        }
-      });
+      }
+      if (callback) {
+        callback(t.__achievements);
+      }
+    });
   },
   unlockAchievement: function(achv_id, callback){
     var t = this;
