@@ -16,6 +16,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
               "You have unlocked achievement '" + achv.name + "' with " + achv.calories.toFixed(3)/1000 + " calories burned."
             );
             notification.show();
+            setTimeout(function () {notification.cancel();}, 5000);
           }
         }
       });
