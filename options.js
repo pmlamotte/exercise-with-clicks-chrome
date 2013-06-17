@@ -67,7 +67,7 @@ function refreshView() {
         zoomType: 'x'
       },
       title: {
-        text: null
+        text: "All time clicks"
       },
       xAxis: {
         type: 'datetime',
@@ -82,7 +82,7 @@ function refreshView() {
         }
       },
       series: [{
-        type: 'area',
+        type: 'line',
         data: clicks,
         name: "clicks",
         pointInterval: 3600 * 1000,
@@ -91,20 +91,6 @@ function refreshView() {
       legend: {
         enabled: false
       },
-      plotOptions: {
-        area: {
-          lineWidth: 1,
-          marker: {
-            enabled: false
-          },
-          shadow: false,
-          states: {
-            hover: {
-              lineWidth: 1
-            }
-          }
-        }
-      }
     });
   });
 }

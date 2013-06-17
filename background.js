@@ -4,7 +4,8 @@ chrome.browserAction.onClicked.addListener(function(){
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if ("db" in request){
-    ClickDB.loadTotal(function(calories) {
+    ClickDB.loadTotal(function(clicks) {
+      var calories = clicks * 1.4;
       ClickDB.getAchievements(function(achvs) {
         for (var achv_id in achvs) {
           var achv = achvs[achv_id];
