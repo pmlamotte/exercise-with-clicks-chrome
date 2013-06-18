@@ -41,6 +41,23 @@ function displayAchievements(achievements) {
   }
 }
 
+function getSeparateClickData(clickArray) {
+  var clicks = [];
+  for (var i = 0; i < clickArray.length; i++) {
+    var prev = (i == 0) ? 0 : clickArray[i-1][1];
+    clicks.push(clickArray[i][1] - prev);
+  }
+  return clicks;
+}
+
+function getCumulativeClickData(clickArray) {
+  var clicks = [];
+  clickArray.forEach(function (hour) {
+    clicks.push(hour[1]);
+  });
+  return clicks;
+}
+
 function refreshView() {
   ClickDB.loadTotal(function(totalCount){
     $("#count").text(totalCount);
@@ -57,9 +74,16 @@ function refreshView() {
     data.sort(function(x,y){return x[0]-y[0]});
     var ticks = [];
     var clicks = [];
+
+    var cumulative = $('#cumulativeBtn').hasClass('active');
+    if (!cumulative) {
+      clicks = getSeparateClickData(data);
+    } else {
+      clicks = getCumulativeClickData(data);
+    }
+
     data.forEach(function(hour){
       ticks.push(tickString(hour[0]));
-      clicks.push(hour[1]);
     });
 
     $('#graph').highcharts({
@@ -102,5 +126,8 @@ $(document).ready(function(){
     if ("db" in request){
       refreshView();
     }
+  });
+  $('#cumulativeBtnGroup').click(function () {
+    refreshView();
   });
 });

@@ -58,3 +58,13 @@ hr {
   font-size: .75em;
   font-weight: normal;
 }
+
+.center {
+  float: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#graph {
+  padding-top: 10px;
+}
