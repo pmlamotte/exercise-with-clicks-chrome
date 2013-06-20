@@ -58,14 +58,7 @@ function getCumulativeClickData(clickArray) {
   return clicks;
 }
 
-function refreshView() {
-  ClickDB.loadTotal(function(totalCount){
-    $("#count").text(totalCount);
-    $("#calories").text((totalCount*1.42/1000).toFixed(3));
-  });
-
-  ClickDB.getAchievements(displayAchievements);
-
+function createGraph() {
   ClickDB.loadAll(function(results){
     data = [];
     for (var hour in results.data) {
@@ -119,8 +112,51 @@ function refreshView() {
   });
 }
 
+function refreshView() {
+  ClickDB.loadTotal(function(totalCount){
+    $("#count").text(totalCount);
+    $("#calories").text((totalCount*1.42/1000).toFixed(3));
+  });
+
+  ClickDB.loadAll(function(results){
+    data = [];
+    for (var hour in results.data) {
+      data.push([parseInt(hour),results.data[hour]]);
+    }
+    data.sort(function(x,y){return x[0]-y[0]});
+    var ticks = [];
+    var clicks = [];
+
+    var cumulative = $('#cumulativeBtn').hasClass('active');
+    if (!cumulative) {
+      clicks = getSeparateClickData(data);
+    } else {
+      clicks = getCumulativeClickData(data);
+    }
+
+    data.forEach(function(hour){
+      ticks.push(hour[0]);
+    });
+
+    var graph = $('#graph').highcharts();
+    var data = graph.series[0].data;
+
+
+    var latestTick = ticks[ticks.length-1] * 3600 * 1000;
+    var latestClicks = clicks[clicks.length-1];
+
+    // take care of the very odd case where we just got a click
+    // on the hour boundary
+    if ( (data[data.length-1].x + new Date().getTimezoneOffset()*60*1000) != latestTick) {
+      graph.series[0].addPoint([tickString(latestTick), latestClicks]);
+    } else {
+      data[data.length-1].update(latestClicks);
+    }
+  });
+}
+
 $(document).ready(function(){
-  refreshView();
+  createGraph();
   displayAchievements();
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if ("db" in request){
@@ -128,6 +164,6 @@ $(document).ready(function(){
     }
   });
   $('#cumulativeBtnGroup').click(function () {
-    refreshView();
+    createGraph();
   });
 });

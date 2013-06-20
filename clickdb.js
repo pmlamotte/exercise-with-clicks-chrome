@@ -137,7 +137,7 @@ ClickDB = {
       }
       var ret ={};
       for (var x = 1; x <= count; x++){
-        var time = start + (x - 1) * interval;
+        var time = start + x * interval;
         if (cumul) {
           if (res[x].rows.length > 0){
             lastcount = ret[time] = res[x].rows.item(0).count;
