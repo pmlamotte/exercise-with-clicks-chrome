@@ -59,7 +59,7 @@ function getCumulativeClickData(clickArray) {
 }
 
 function createGraph() {
-  ClickDB.loadAll(function(results){
+  loadCurrentRange(true, function(results){
     data = [];
     for (var hour in results.data) {
       data.push([parseInt(hour),results.data[hour]]);
@@ -112,58 +112,101 @@ function createGraph() {
   });
 }
 
-function refreshView() {
-  ClickDB.loadTotal(function(totalCount){
+function currentRange(callback) {
+  ClickDB._earliestIndex(function(earliestIdx) {
+    var range = parseInt($('#rangeBtnGroup > .active').val());
+    var maxRange = ClickDB._currentIndex() - earliestIdx;
+    if (range == -1) {
+      range = maxRange;
+    } else {
+      range = Math.min(maxRange, range);
+    }
+    callback(range);
+  });
+}
+
+function loadCurrentRange(cumulative, callback) {
+  var currIdx = ClickDB._currentIndex();
+  currentRange(function(range) {
+    ClickDB.loadRange(1, currIdx - (currIdx - range) + 1, cumulative, function(results) {
+      callback(results);
+    });
+  });
+}
+
+function refreshStats() {
+  loadCurrentRange(false, function(results){
+    var totalCount = 0;
+    var data = results.data;
+    for (var hour in data) {
+      totalCount += data[hour];
+    }
+
     $("#count").text(totalCount);
     $("#calories").text((totalCount*1.42/1000).toFixed(3));
   });
 
-  ClickDB.loadAll(function(results){
-    data = [];
-    for (var hour in results.data) {
-      data.push([parseInt(hour),results.data[hour]]);
-    }
-    data.sort(function(x,y){return x[0]-y[0]});
-    var ticks = [];
-    var clicks = [];
-
-    var cumulative = $('#cumulativeBtn').hasClass('active');
-    if (!cumulative) {
-      clicks = getSeparateClickData(data);
-    } else {
-      clicks = getCumulativeClickData(data);
-    }
-
-    data.forEach(function(hour){
-      ticks.push(hour[0]);
-    });
-
-    var graph = $('#graph').highcharts();
-    var data = graph.series[0].data;
-
-
-    var latestTick = ticks[ticks.length-1] * 3600 * 1000;
-    var latestClicks = clicks[clicks.length-1];
-
-    // take care of the very odd case where we just got a click
-    // on the hour boundary
-    if ( (data[data.length-1].x + new Date().getTimezoneOffset()*60*1000) != latestTick) {
-      graph.series[0].addPoint([tickString(latestTick), latestClicks]);
-    } else {
-      data[data.length-1].update(latestClicks);
-    }
+  ClickDB.getAchievements(function (achvs) {
+    displayAchievements(achvs);
   });
+}
+
+function refreshGraph() {
+  if ($('#graph')) {
+    ClickDB.loadAll(function(results){
+      data = [];
+      for (var hour in results.data) {
+        data.push([parseInt(hour),results.data[hour]]);
+      }
+      data.sort(function(x,y){return x[0]-y[0]});
+      var ticks = [];
+      var clicks = [];
+
+      var cumulative = $('#cumulativeBtn').hasClass('active');
+      if (!cumulative) {
+        clicks = getSeparateClickData(data);
+      } else {
+        clicks = getCumulativeClickData(data);
+      }
+
+      data.forEach(function(hour){
+        ticks.push(hour[0]);
+      });
+
+      var graph = $('#graph').highcharts();
+      var data = graph.series[0].data;
+
+
+      var latestTick = ticks[ticks.length-1] * 3600 * 1000;
+      var latestClicks = clicks[clicks.length-1];
+
+      // take care of the very odd case where we just got a click
+      // on the hour boundary
+      if ( (data[data.length-1].x + new Date().getTimezoneOffset()*60*1000) != latestTick) {
+        graph.series[0].addPoint([tickString(latestTick), latestClicks]);
+      } else {
+        data[data.length-1].update(latestClicks);
+      }
+    });
+  }
 }
 
 $(document).ready(function(){
   createGraph();
   displayAchievements();
+  refreshStats();
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if ("db" in request){
-      refreshView();
+      refreshStats();
+      refreshGraph();
     }
   });
   $('#cumulativeBtnGroup').click(function () {
+    createGraph();
+  });
+
+  $('#rangeBtnGroup').click(function (e) {
+    refreshStats();
     createGraph();
   });
 });

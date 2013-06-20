@@ -23,9 +23,18 @@
           </div> <!-- end row -->
 
 
-          <h2>All-time</h2>
+          <h2>Stats</h2>
           <div class="row">
             <div class="span12">
+              <div class="row">
+                <div id="rangeBtnGroup" class="btn-group span12 text-center" data-toggle="buttons-radio">
+                  <button type="button" class="btn active" value="-1">All-Time</button>
+                  <button type="button" class="btn" value="24">24hrs</button>
+                  <button type="button" class="btn" value="168">7 days</button>
+                  <button type="button" class="btn" value="720">30 days</button>
+                </div>
+              </div>
+
               <table class="table table-striped table-bordered">
                 <tr>
                   <td><b>Clicks</b></td>
@@ -41,7 +50,7 @@
 
           <hr>
 
-          <h2>Click History</h2>
+          <h2>History</h2>
           <div class="row">
             <div id=graph-container class="span12">
               <div class="row">
