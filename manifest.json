@@ -3,7 +3,7 @@
 
   "name": "Exercise with Clicks",
   "description": "Keep track of the weight you have lost just by clicking your mouse!",
-  "version": "0.1.0.1",
+  "version": "0.1.1.0",
   "options_page": "options.html",
 
   "permissions":[
