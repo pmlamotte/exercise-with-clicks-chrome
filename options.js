@@ -97,11 +97,16 @@ function createGraph() {
         }
       },
       series: [{
-        type: 'line',
+        type: 'area',
         data: clicks,
         name: "clicks",
         pointInterval: 3600 * 1000,
-        pointStart: (results.start * 60 - new Date().getTimezoneOffset() + separateExtra) * 60 * 1000
+        pointStart: (results.start * 60 - new Date().getTimezoneOffset() + separateExtra) * 60 * 1000,
+        fillOpacity: 0.0000001,
+        lineWidth: 4,
+        marker: {
+          enabled: false
+        }
       }],
       legend: {
         enabled: false
