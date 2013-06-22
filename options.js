@@ -43,9 +43,8 @@ function displayAchievements(achievements) {
 
 function getSeparateClickData(clickArray) {
   var clicks = [];
-  for (var i = 0; i < clickArray.length; i++) {
-    var prev = (i == 0) ? 0 : clickArray[i-1][1];
-    clicks.push(clickArray[i][1] - prev);
+  for (var i = 1; i < clickArray.length; i++) {
+    clicks.push(clickArray[i][1] - clickArray[i-1][1]);
   }
   return clicks;
 }
@@ -59,8 +58,10 @@ function getCumulativeClickData(clickArray) {
 }
 
 function createGraph() {
-  loadCurrentRange(true, function(results){
-    data = [];
+  var cumulative = $('#cumulativeBtn').hasClass('active');
+
+  loadCurrentRange(true, !cumulative, function(results){
+    var data = [];
     for (var hour in results.data) {
       data.push([parseInt(hour),results.data[hour]]);
     }
@@ -68,23 +69,20 @@ function createGraph() {
     var ticks = [];
     var clicks = [];
 
-    var cumulative = $('#cumulativeBtn').hasClass('active');
     if (!cumulative) {
       clicks = getSeparateClickData(data);
     } else {
       clicks = getCumulativeClickData(data);
     }
 
-    data.forEach(function(hour){
-      ticks.push(tickString(hour[0]));
-    });
+    var separateExtra = (!cumulative) ? 60 : 0;
 
     $('#graph').highcharts({
       chart: {
         zoomType: 'x'
       },
       title: {
-        text: "All time clicks"
+        text: currentRangeText() + " clicks"
       },
       xAxis: {
         type: 'datetime',
@@ -103,7 +101,7 @@ function createGraph() {
         data: clicks,
         name: "clicks",
         pointInterval: 3600 * 1000,
-        pointStart: (results.start * 60 - new Date().getTimezoneOffset()) * 60 * 1000
+        pointStart: (results.start * 60 - new Date().getTimezoneOffset() + separateExtra) * 60 * 1000
       }],
       legend: {
         enabled: false
@@ -125,17 +123,27 @@ function currentRange(callback) {
   });
 }
 
-function loadCurrentRange(cumulative, callback) {
+function currentRangeText() {
+  return $('#rangeBtnGroup > .active').text();
+}
+
+/*
+ * Loads the current range of values. If extraInBeginning is set to true,
+ * an extra value will be set at the beginning for doing things like
+ * differences
+ */
+function loadCurrentRange(cumulative, extraInBeginning, callback) {
   var currIdx = ClickDB._currentIndex();
   currentRange(function(range) {
-    ClickDB.loadRange(1, currIdx - (currIdx - range) + 1, cumulative, function(results) {
+    var extra = (extraInBeginning) ? 1 : 0;
+    ClickDB.loadRange(1, currIdx - (currIdx - range) + 1 + extra, cumulative, function(results) {
       callback(results);
     });
   });
 }
 
 function refreshStats() {
-  loadCurrentRange(false, function(results){
+  loadCurrentRange(false, false, function(results){
     var totalCount = 0;
     var data = results.data;
     for (var hour in data) {
@@ -152,43 +160,41 @@ function refreshStats() {
 }
 
 function refreshGraph() {
-  if ($('#graph')) {
-    ClickDB.loadAll(function(results){
-      data = [];
-      for (var hour in results.data) {
-        data.push([parseInt(hour),results.data[hour]]);
-      }
-      data.sort(function(x,y){return x[0]-y[0]});
-      var ticks = [];
-      var clicks = [];
+  ClickDB.loadRange(1, 3, true, function(results){
+    var data = [];
+    for (var hour in results.data) {
+      data.push([parseInt(hour),results.data[hour]]);
+    }
 
-      var cumulative = $('#cumulativeBtn').hasClass('active');
-      if (!cumulative) {
-        clicks = getSeparateClickData(data);
-      } else {
-        clicks = getCumulativeClickData(data);
-      }
+    data.sort(function(x,y){return x[0]-y[0]});
+    var ticks = [];
+    var clicks = [];
 
-      data.forEach(function(hour){
-        ticks.push(hour[0]);
-      });
+    var cumulative = $('#cumulativeBtn').hasClass('active');
+    if (!cumulative) {
+      clicks = getSeparateClickData(data);
+    } else {
+      clicks = getCumulativeClickData(data);
+    }
 
-      var graph = $('#graph').highcharts();
-      var data = graph.series[0].data;
+    for (var i = 0; i < data.length; i++) {
+      ticks.push(data[i][0]);
+    }
 
+    var graph = $('#graph').highcharts();
+    var graphData = graph.series[0].data;
 
-      var latestTick = ticks[ticks.length-1] * 3600 * 1000;
-      var latestClicks = clicks[clicks.length-1];
+    var latestTick = ticks[ticks.length-1] * 3600 * 1000;
+    var latestClickCount = clicks[clicks.length-1];
 
-      // take care of the very odd case where we just got a click
-      // on the hour boundary
-      if ( (data[data.length-1].x + new Date().getTimezoneOffset()*60*1000) != latestTick) {
-        graph.series[0].addPoint([tickString(latestTick), latestClicks]);
-      } else {
-        data[data.length-1].update(latestClicks);
-      }
-    });
-  }
+    // take care of the very odd case where we just got a click
+    // on the hour boundary
+    if ( (graphData[graphData.length-1].x + new Date().getTimezoneOffset()*60*1000) != latestTick) {
+      graph.series[0].addPoint([latestTick, latestClickCount]);
+    } else {
+      graphData[graphData.length-1].update(latestClickCount);
+    }
+  });
 }
 
 $(document).ready(function(){
@@ -202,7 +208,7 @@ $(document).ready(function(){
     }
   });
   $('#cumulativeBtnGroup').click(function () {
-    createGraph();
+    setTimeout(createGraph,0);
   });
 
   $('#rangeBtnGroup').click(function (e) {
