@@ -3,7 +3,7 @@
 
   "name": "Exercise with Clicks",
   "description": "Keep track of the weight you have lost just by clicking your mouse!",
-  "version": "0.1.1.0",
+  "version": "0.1.1.1",
   "options_page": "options.html",
 
   "permissions":[
@@ -17,7 +17,7 @@
     "128": "img/mouse128.png"
   },
 
-  "web_accessible_resources": ["stuff.js", "img/trophy.png"],
+  "web_accessible_resources": ["stuff.js", "img/trophy.png", "jquery-2.0.3.min.map"],
 
   "content_scripts": [{
     "js": ["jquery.min.js","clickdb.js","stuff.js"],
